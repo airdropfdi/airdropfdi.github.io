@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FDI Airdrop Claim</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+        }
+        
+        /* Animated GIF Background */
+        .bg-gif {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        
+        /* Overlay to improve readability */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transform: translateY(0);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            width: 100%;
+            margin: 10px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            overflow: hidden;
+        }
+        
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 22px;
+        }
+        
+        .subtitle {
+            color: #444;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+        
+        .token-info {
+            background: linear-gradient(to right, rgba(243, 244, 246, 0.7), rgba(229, 231, 235, 0.7));
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .token-amount {
+            font-size: 26px;
+            font-weight: 700;
+            color: #6e8efb;
+        }
+        
+        .token-symbol {
+            font-size: 16px;
+            color: #444;
+            font-weight: 600;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            background: rgba(248, 249, 250, 0.7);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .info-label {
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #222;
+        }
+        
+        .claim-button {
+            background: linear-gradient(to right, #6e8efb, #a777e3);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(110, 142, 251, 0.4);
+        }
+        
+        .claim-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(110, 142, 251, 0.6);
+        }
+        
+        .claim-button:active {
+            transform: translateY(0);
+        }
+        
+        .claim-button.claimed {
+            background: linear-gradient(to right, #4ade80, #22c55e);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .status.success {
+            background: rgba(220, 252, 231, 0.8);
+            color: #166534;
+            display: block;
+        }
+        
+        .status.error {
+            background: rgba(254, 226, 226, 0.8);
+            color: #b91c1c;
+            display: block;
+        }
+        
+        .wallet-address {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #444;
+            word-break: break-all;
+            font-weight: 500;
+        }
+        
+        .terms {
+            margin-top: 20px;
+            font-size: 11px;
+            color: #444;
+            line-height: 1.4;
+        }
+        
+        .terms a {
+            color: #6e8efb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .card::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .card::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        
+        .card::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .card::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 400px) {
+            .container {
+                max-width: 340px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .token-amount {
+                font-size: 24px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .claim-button {
+                padding: 12px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated GIF Background -->
+    <img src="https://iili.io/KISxJet.gif" class="bg-gif" alt="Animated background">
+    <div class="overlay"></div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <img src="https://iili.io/KISbmVn.png" alt="FDI Logo">
+            </div>
+            <h1>FDI Airdrop</h1>
+            <p class="subtitle">You're eligible to claim your FDI token airdrop for being an early Farcaster supporter!</p>
+            
+            <div class="token-info">
+                <div>
+                    <div class="info-label">You receive</div>
+                    <div class="token-amount">3000</div>
+                </div>
+                <div class="token-symbol">FDI</div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Value</div>
+                    <div class="info-value">$120</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Network</div>
+                    <div class="info-value">Base</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Lockup</div>
+                    <div class="info-value">0 days</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Delegation</div>
+                    <div class="info-value">Available</div>
+                </div>
+            </div>
+            
+            <button class="claim-button" id="claimButton">
+                <i class="fas fa-gift"></i> Claim Airdrop
+            </button>
+            
+            <div class="status" id="statusMessage"></div>
+            
+            <div class="wallet-address" id="walletAddress">
+                Not connected
+            </div>
+            
+            <div class="terms">
+                By claiming, you agree to our <a href="#">Terms of Service</a> and acknowledge that you have read our <a href="#">Privacy Policy</a>. This airdrop is subject to eligibility requirements.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const claimButton = document.getElementById('claimButton');
+            const statusMessage = document.getElementById('statusMessage');
+            const walletAddressEl = document.getElementById('walletAddress');
+            
+            // Contract details (replace with actual contract address and ABI)
+            const tokenAddress = "0xBFD0dfd7df11480aEC296f090a95d8A0e2Ecb8C6";
+            const tokenABI = [
+                "function balanceOf(address owner) view returns (uint256)",
+                "function transfer(address to, uint amount) returns (bool)",
+                "function claimAirdrop() external"
+            ];
+            
+            let signer;
+            let userAddress;
+            
+            // Initialize connection
+            async function init() {
+                if (window.ethereum) {
+                    try {
+                        // Request account access
+                        await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        const provider = new ethers.BrowserProvider(window.ethereum);
+                        signer = await provider.getSigner();
+                        userAddress = await signer.getAddress();
+                        
+                        // Display truncated wallet address
+                        const truncatedAddress = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
+                        walletAddressEl.textContent = "Connected: " + truncatedAddress;
+                        
+                        // Check if already claimed
+                        await checkClaimStatus();
+                    } catch (error) {
+                        console.error("User rejected connection:", error);
+                        statusMessage.textContent = 'Please connect your wallet to claim.';
+                        statusMessage.classList.add('error');
+                        statusMessage.style.display = 'block';
+                    }
+                } else {
+                    statusMessage.textContent = 'Web3 wallet not found. Please install MetaMask or another compatible wallet.';
+                    statusMessage.classList.add('error');
+                    statusMessage.style.display = 'block';
+                    claimButton.disabled = true;
+                }
+            }
+            
+            // Check if user has already claimed
+            async function checkClaimStatus() {
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const contract = new ethers.Contract(tokenAddress, tokenABI, provider);
+                    
+                    // Check balance (assuming 3000 tokens is the airdrop amount)
+                    const balance = await contract.balanceOf(userAddress);
+                    if (balance >= ethers.parseUnits("3000", 18)) {
+                        claimButton.classList.add('claimed');
+                        claimButton.innerHTML = '<i class="fas fa-check-circle"></i> Already Claimed';
+                        claimButton.disabled = true;
+                        statusMessage.textContent = 'You have already claimed your FDI airdrop.';
+                        statusMessage.classList.add('success');
+                        statusMessage.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error("Error checking claim status:", error);
+                }
+            }
+            
+            // Claim airdrop function
+            async function claimAirdrop() {
+                if (!signer) {
+                    await init();
+                    if (!signer) return; // Failed to connect
+                }
+                
+                claimButton.disabled = true;
+                claimButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                
+                try {
+                    const contract = new ethers.Contract(tokenAddress, tokenABI, signer);
+                    
+                    // Call the claimAirdrop function
+                    const tx = await contract.claimAirdrop();
+                    
+                    statusMessage.textContent = 'Transaction submitted. Waiting for confirmation...';
+                    statusMessage.classList.remove('error', 'success');
+                    statusMessage.style.display = 'block';
+                    
+                    // Wait for transaction to be mined
+                    const receipt = await tx.wait();
+                    
+                    // Success
+                    claimButton.classList.add('claimed');
+                    claimButton.innerHTML = '<i class="fas fa-check-circle"></i> Claimed Successfully!';
+                    statusMessage.textContent = 'Your 3,000 FDI tokens have been transferred to your wallet.';
+                    statusMessage.classList.add('success');
+                    
+                } catch (error) {
+                    console.error("Claim error:", error);
+                    
+                    if (error.code === 'ACTION_REJECTED') {
+                        statusMessage.textContent = 'Transaction was rejected.';
+                    } else if (error.reason) {
+                        statusMessage.textContent = error.reason;
+                    } else {
+                        statusMessage.textContent = 'Transaction failed. Please try again.';
+                    }
+                    
+                    statusMessage.classList.add('error');
+                    claimButton.innerHTML = '<i class="fas fa-gift"></i> Try Again';
+                    claimButton.disabled = false;
+                }
+            }
+            
+            // Initialize on load if already connected
+            if (window.ethereum && window.ethereum.selectedAddress) {
+                init();
+            }
+            
+            // Add click event to claim button
+            claimButton.addEventListener('click', claimAirdrop);
+        });
+    </script>
+</body>
+</html>
