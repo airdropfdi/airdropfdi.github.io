@@ -1,368 +1,457 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" class="h-full">
- <head>
+<head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NFT Layer Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NFT Layer Studio | Drag & Drop Layering</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;family=Outfit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: 'Outfit', sans-serif; }
+    * { box-sizing: border-box; user-select: none; }
+    body { font-family: 'Outfit', sans-serif; background: #0f0f1a; color: #e2e8f0; }
     .mono { font-family: 'Space Mono', monospace; }
-    .nft-card { background: linear-gradient(145deg, #1a1a2e, #16213e); border: 1px solid #2a2a4a; }
-    .layer-card { background: #1a1a2e; border: 1px solid #2a2a4a; }
-    .glow { box-shadow: 0 0 20px rgba(99, 102, 241, 0.15); }
+    .nft-card { background: linear-gradient(145deg, #1a1a2e, #16213e); border: 1px solid #2a2a4a; transition: all 0.2s; }
+    .layer-card { background: #1a1a2e; border: 1px solid #2a2a4a; transition: all 0.2s; cursor: grab; }
+    .layer-card.dragging { opacity: 0.5; cursor: grabbing; }
+    .layer-card.drag-over { border: 2px solid #a78bfa; background: #2a2a4e; }
+    .glow { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
     .tab-active { background: #6366f1; color: white; }
     .tab-inactive { background: #1a1a2e; color: #94a3b8; }
     input[type="file"]::file-selector-button {
       background: #6366f1; color: white; border: none; padding: 8px 16px;
       border-radius: 8px; cursor: pointer; font-family: 'Outfit', sans-serif;
     }
-    .layer-preview img { image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .fade-in { animation: fadeIn 0.3s ease; }
+    .layer-preview img { image-rendering: crisp-edges; pointer-events: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.25s ease; }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center; z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-content {
+      max-width: 90vw; width: 480px; background: #111122; border: 1px solid #2a2a4a;
+      border-radius: 28px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .attribute-badge {
+      background: #1e1e32; padding: 6px 12px; border-radius: 40px; font-size: 12px;
+      border-left: 3px solid #6366f1;
+    }
   </style>
-  <style>body { box-sizing: border-box; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full bg-[#0f0f1a] text-[#e2e8f0] overflow-auto">
-  <div id="app" class="w-full h-full flex flex-col">
-   <!-- Header -->
-   <header class="p-4 border-b border-[#2a2a4a] flex items-center justify-between">
-    <h1 id="app-title" class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">NFT Layer Studio</h1><span class="mono text-xs text-slate-500">v1.0</span>
-   </header><!-- Tabs -->
-   <div class="flex p-3 gap-2">
-    <button onclick="switchTab('layers')" id="tab-layers" class="tab-active px-4 py-2 rounded-lg text-sm font-medium transition-all">Layers</button> <button onclick="switchTab('create')" id="tab-create" class="tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition-all">Create NFT</button> <button onclick="switchTab('collection')" id="tab-collection" class="tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition-all">Collection</button>
-   </div><!-- Content -->
-   <div class="flex-1 overflow-auto p-4">
-    <!-- Layers Tab -->
-    <div id="panel-layers" class="space-y-4">
-     <div class="flex items-center gap-3">
-      <label class="flex-1 relative"> <input type="file" id="layer-upload" accept="image/*" multiple class="w-full text-sm text-slate-400 file:mr-3"> </label>
-     </div><input type="text" id="layer-name" placeholder="Layer name (optional)" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"> <button onclick="addLayer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-3 font-medium transition-all flex items-center justify-center gap-2"> <i data-lucide="plus" style="width:18px;height:18px"></i> Add Layer </button>
-     <div id="layers-list" class="grid grid-cols-2 gap-3 mt-4"></div>
-     <p id="layers-empty" class="text-center text-slate-500 text-sm py-8">No layers yet. Upload images to get started.</p>
-    </div><!-- Create Tab -->
-    <div id="panel-create" class="space-y-4 hidden">
-     <p class="text-sm text-slate-400 mb-2">Select layers to combine into an NFT:</p>
-     <div id="create-layers-list" class="grid grid-cols-3 gap-3"></div><input type="text" id="nft-name" placeholder="NFT Name" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"> <button onclick="createNFT()" id="btn-create-nft" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg py-3 font-medium transition-all"> Generate NFT </button>
-     <div id="create-preview" class="hidden mt-4"></div>
-    </div><!-- Collection Tab -->
-    <div id="panel-collection" class="space-y-4 hidden">
-     <div id="nft-count" class="text-sm text-slate-400"></div>
-     <div id="nft-list" class="grid grid-cols-1 gap-4"></div>
-     <p id="nft-empty" class="text-center text-slate-500 text-sm py-8">No NFTs created yet.</p>
-    </div>
-   </div><!-- Toast -->
-   <div id="toast" class="fixed bottom-4 left-4 right-4 bg-indigo-600 text-white px-4 py-3 rounded-lg text-sm text-center hidden transition-all z-50"></div>
+</head>
+<body class="h-full overflow-auto">
+<div id="app" class="w-full h-full flex flex-col">
+  <!-- HEADER -->
+  <header class="p-4 border-b border-[#2a2a4a] flex items-center justify-between bg-[#0f0f1a]/80 backdrop-blur-sm">
+    <h1 id="app-title" class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">NFT Layer Studio</h1>
+    <span class="mono text-xs text-slate-500">drag layers ⬇️</span>
+  </header>
+
+  <!-- TABS -->
+  <div class="flex p-3 gap-2 border-b border-[#1f1f30]">
+    <button onclick="switchTab('layers')" id="tab-layers" class="tab-active px-4 py-2 rounded-lg text-sm font-medium transition-all">🎨 Layers</button>
+    <button onclick="switchTab('create')" id="tab-create" class="tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition-all">✨ Create NFT</button>
+    <button onclick="switchTab('collection')" id="tab-collection" class="tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition-all">📦 Collection</button>
   </div>
-  <script>
-    // State
-    let layers = []; // { id, name, dataUrl }
-    let selectedLayers = new Set();
-    let nfts = []; // stored locally
-    let currentTab = 'layers';
 
-    const defaultConfig = {
-      app_title: 'NFT Layer Studio',
-      primary_color: '#6366f1',
-      background_color: '#0f0f1a',
-      surface_color: '#1a1a2e',
-      text_color: '#e2e8f0',
-      accent_color: '#a78bfa'
-    };
+  <!-- MAIN CONTENT -->
+  <div class="flex-1 overflow-auto p-4">
+    <!-- LAYERS PANEL -->
+    <div id="panel-layers" class="space-y-4">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <label class="flex-1 relative">
+          <input type="file" id="layer-upload" accept="image/*" multiple class="w-full text-sm text-slate-400 file:mr-3">
+        </label>
+        <input type="text" id="layer-name" placeholder="Layer name (optional)" class="flex-1 bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+        <button onclick="addLayer()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-5 py-3 font-medium transition-all flex items-center justify-center gap-2">
+          <i data-lucide="plus" style="width:18px;height:18px"></i> Add
+        </button>
+      </div>
+      <div class="text-xs text-slate-400 flex items-center gap-2"><i data-lucide="move" style="width:14px"></i> Drag & drop to reorder layers (top = front in NFT)</div>
+      <div id="layers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2"></div>
+      <p id="layers-empty" class="text-center text-slate-500 text-sm py-8">No layers yet. Upload PNG/JPG images.</p>
+    </div>
 
-    // Load from localStorage
-    function loadFromStorage() {
-      const storedLayers = localStorage.getItem('nft_layers');
-      const storedNFTs = localStorage.getItem('nft_collection');
-      if (storedLayers) layers = JSON.parse(storedLayers);
-      if (storedNFTs) nfts = JSON.parse(storedNFTs);
-      renderLayers();
-      renderCollection();
-    }
+    <!-- CREATE NFT PANEL -->
+    <div id="panel-create" class="space-y-5 hidden">
+      <p class="text-sm text-slate-300 bg-[#1a1a2e] p-3 rounded-lg">🎯 Select layers (order respects layer list: top layers appear on top)</p>
+      <div id="create-layers-list" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+      <input type="text" id="nft-name" placeholder="NFT Name (e.g. 'Cyber Dragon #42')" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+      <input type="text" id="nft-description" placeholder="Description (optional)" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+      <button onclick="createNFT()" id="btn-create-nft" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl py-3 font-semibold transition-all shadow-lg">⚡ Generate NFT & Metadata</button>
+      <div id="create-preview" class="hidden mt-2"></div>
+    </div>
 
-    // Save to localStorage
-    function saveToStorage() {
-      localStorage.setItem('nft_layers', JSON.stringify(layers));
-      localStorage.setItem('nft_collection', JSON.stringify(nfts));
-    }
+    <!-- COLLECTION PANEL -->
+    <div id="panel-collection" class="space-y-5 hidden">
+      <div id="nft-count" class="text-sm text-indigo-300 font-mono"></div>
+      <div id="nft-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      <p id="nft-empty" class="text-center text-slate-500 text-sm py-12">✨ No NFTs minted yet. Go to Create tab.</p>
+    </div>
+  </div>
 
-    // Element SDK
-    window.elementSdk.init({
-      defaultConfig,
-      onConfigChange: async (config) => {
-        const title = config.app_title || defaultConfig.app_title;
-        document.getElementById('app-title').textContent = title;
-      },
-      mapToCapabilities: (config) => ({
-        recolorables: [
-          { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); document.body.style.backgroundColor = v; } },
-          { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
-          { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); document.body.style.color = v; } },
-          { get: () => config.primary_color || defaultConfig.primary_color, set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
-          { get: () => config.accent_color || defaultConfig.accent_color, set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } }
-        ],
-        borderables: [],
-        fontEditable: {
-          get: () => config.font_family || 'Outfit',
-          set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); document.body.style.fontFamily = `${v}, sans-serif`; }
-        },
-        fontSizeable: undefined
-      }),
-      mapToEditPanelValues: (config) => new Map([
-        ["app_title", config.app_title || defaultConfig.app_title]
-      ])
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-indigo-600/90 backdrop-blur-md text-white px-5 py-3 rounded-xl text-sm text-center hidden transition-all z-50 shadow-xl border border-indigo-400"></div>
+</div>
+
+<script>
+  // ========== STATE ==========
+  let layers = [];           // { id, name, dataUrl }
+  let selectedLayers = new Set();
+  let nfts = [];             // { id, name, description, layersString, image, created_at, attributesArray }
+  let currentTab = 'layers';
+  let dragSourceIndex = null;
+
+  const defaultConfig = {
+    app_title: 'NFT Layer Studio',
+    primary_color: '#6366f1',
+    background_color: '#0f0f1a',
+    surface_color: '#1a1a2e',
+    text_color: '#e2e8f0',
+    accent_color: '#a78bfa'
+  };
+
+  // ========== STORAGE ==========
+  function loadFromStorage() {
+    const storedLayers = localStorage.getItem('nft_layers');
+    const storedNFTs = localStorage.getItem('nft_collection');
+    if (storedLayers) layers = JSON.parse(storedLayers);
+    if (storedNFTs) nfts = JSON.parse(storedNFTs);
+    renderLayers();
+    renderCollection();
+  }
+  function saveToStorage() {
+    localStorage.setItem('nft_layers', JSON.stringify(layers));
+    localStorage.setItem('nft_collection', JSON.stringify(nfts));
+  }
+
+  // ========== SDK INIT ==========
+  window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async (config) => {
+      document.getElementById('app-title').textContent = config.app_title || defaultConfig.app_title;
+    },
+    mapToCapabilities: (config) => ({
+      recolorables: [
+        { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); document.body.style.backgroundColor = v; } },
+        { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+        { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); document.body.style.color = v; } },
+        { get: () => config.primary_color || defaultConfig.primary_color, set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
+        { get: () => config.accent_color || defaultConfig.accent_color, set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } }
+      ],
+      fontEditable: { get: () => config.font_family || 'Outfit', set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); document.body.style.fontFamily = `${v}, sans-serif`; } }
+    })
+  });
+
+  loadFromStorage();
+
+  // ========== TAB MANAGEMENT ==========
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    ['layers', 'create', 'collection'].forEach(t => {
+      document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+      document.getElementById(`tab-${t}`).className = t === tab ? 'tab-active px-4 py-2 rounded-lg text-sm font-medium' : 'tab-inactive px-4 py-2 rounded-lg text-sm font-medium';
     });
+    if (tab === 'create') renderCreateLayers();
+    lucide.createIcons();
+  };
 
-    // Load on init
-    loadFromStorage();
-
-    // Tab switching
-    function switchTab(tab) {
-      currentTab = tab;
-      ['layers', 'create', 'collection'].forEach(t => {
-        document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
-        document.getElementById(`tab-${t}`).className = t === tab ? 'tab-active px-4 py-2 rounded-lg text-sm font-medium transition-all' : 'tab-inactive px-4 py-2 rounded-lg text-sm font-medium transition-all';
-      });
-      if (tab === 'create') renderCreateLayers();
-    }
-
-    // Layers
-    function addLayer() {
-      const input = document.getElementById('layer-upload');
-      const nameInput = document.getElementById('layer-name');
-      if (!input.files || !input.files.length) { showToast('Please select an image'); return; }
-
-      Array.from(input.files).forEach((file, i) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const name = nameInput.value.trim() || file.name.replace(/\.[^.]+$/, '') || `Layer ${layers.length + 1}`;
-          layers.push({ id: Date.now() + '_' + i, name: name, dataUrl: e.target.result });
-          saveToStorage();
-          renderLayers();
-        };
-        reader.readAsDataURL(file);
-      });
-      input.value = '';
-      nameInput.value = '';
-    }
-
-    function deleteLayer(id) {
-      layers = layers.filter(l => l.id !== id);
-      selectedLayers.delete(id);
-      saveToStorage();
-      renderLayers();
-    }
-
-    function editLayerName(id) {
-      const layer = layers.find(l => l.id === id);
-      if (!layer) return;
-      const card = document.querySelector(`[data-layer-id="${id}"]`);
-      const nameEl = card.querySelector('.layer-name');
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = layer.name;
-      input.className = 'bg-[#0f0f1a] border border-indigo-500 rounded px-2 py-1 text-xs text-white w-full focus:outline-none';
-      input.onblur = () => { layer.name = input.value || layer.name; saveToStorage(); renderLayers(); };
-      input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); };
-      nameEl.replaceWith(input);
-      input.focus();
-    }
-
-    function renderLayers() {
-      const list = document.getElementById('layers-list');
-      const empty = document.getElementById('layers-empty');
-      empty.classList.toggle('hidden', layers.length > 0);
-      list.innerHTML = layers.map(l => `
-        <div class="layer-card rounded-xl p-3 fade-in" data-layer-id="${l.id}">
-          <div class="layer-preview aspect-square rounded-lg overflow-hidden bg-[#0f0f1a] mb-2 flex items-center justify-center">
-            <img src="${l.dataUrl}" alt="${l.name}" class="w-full h-full object-contain" style="image-rendering:crisp-edges;">
-          </div>
-          <p class="layer-name text-xs font-medium truncate mb-2">${l.name}</p>
-          <div class="flex gap-1">
-            <button onclick="editLayerName('${l.id}')" class="flex-1 text-xs bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded py-1 transition-all">Edit</button>
-            <button onclick="deleteLayer('${l.id}')" class="flex-1 text-xs bg-red-900/40 hover:bg-red-900/70 text-red-300 rounded py-1 transition-all">Delete</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    // Create NFT
-    function renderCreateLayers() {
-      const list = document.getElementById('create-layers-list');
-      if (!layers.length) { list.innerHTML = '<p class="col-span-3 text-center text-slate-500 text-sm py-4">Add layers first</p>'; return; }
-      list.innerHTML = layers.map(l => `
-        <div onclick="toggleSelect('${l.id}')" class="cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${selectedLayers.has(l.id) ? 'border-indigo-500 glow' : 'border-[#2a2a4a]'}">
-          <div class="aspect-square bg-[#0f0f1a] flex items-center justify-center">
-            <img src="${l.dataUrl}" alt="${l.name}" class="w-full h-full object-contain" style="image-rendering:crisp-edges;">
-          </div>
-          <p class="text-[10px] text-center py-1 truncate px-1">${l.name}</p>
-        </div>
-      `).join('');
-    }
-
-    function toggleSelect(id) {
-      if (selectedLayers.has(id)) selectedLayers.delete(id); else selectedLayers.add(id);
-      renderCreateLayers();
-    }
-
-    async function createNFT() {
-      if (!selectedLayers.size) { showToast('Select at least one layer'); return; }
-      const name = document.getElementById('nft-name').value.trim() || `NFT #${nfts.length + 1}`;
-      if (nfts.length >= 999) { showToast('Maximum 999 NFTs reached'); return; }
-
-      const btn = document.getElementById('btn-create-nft');
-      btn.disabled = true; btn.textContent = 'Generating...';
-
-      try {
-        // Composite layers onto canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = 512; 
-        canvas.height = 512;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, 512, 512);
-
-        const selectedArr = layers.filter(l => selectedLayers.has(l.id));
-        
-        for (const layer of selectedArr) {
-          await new Promise((res, rej) => {
-            const img = new Image();
-            img.onload = () => { 
-              try {
-                ctx.drawImage(img, 0, 0, 512, 512); 
-                res(); 
-              } catch(e) { rej(e); }
-            };
-            img.onerror = () => rej(new Error('Image load failed'));
-            img.src = layer.dataUrl;
-          });
-        }
-
-        const imageData = canvas.toDataURL('image/png');
-        const layerNames = selectedArr.map(l => l.name).join('|');
-
-        const nftId = Date.now();
-        const nftData = {
-          id: nftId,
-          name: name,
-          layers: layerNames,
-          image: imageData,
-          created_at: new Date().toISOString()
-        };
-
-        nfts.push(nftData);
+  // ========== LAYERS (DRAG & DROP REORDER) ==========
+  window.addLayer = function() {
+    const input = document.getElementById('layer-upload');
+    const nameInput = document.getElementById('layer-name');
+    if (!input.files || !input.files.length) { showToast('📁 Select at least one image'); return; }
+    Array.from(input.files).forEach((file, idx) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const baseName = nameInput.value.trim() || file.name.replace(/\.[^.]+$/, '') || `Layer ${layers.length+1}`;
+        layers.push({ id: Date.now() + '_' + idx + '_' + Math.random(), name: baseName, dataUrl: e.target.result });
         saveToStorage();
+        renderLayers();
+      };
+      reader.readAsDataURL(file);
+    });
+    input.value = '';
+    nameInput.value = '';
+  };
 
-        btn.disabled = false; 
-        btn.textContent = 'Generate NFT';
+  window.deleteLayer = function(id) {
+    layers = layers.filter(l => l.id !== id);
+    selectedLayers.delete(id);
+    saveToStorage();
+    renderLayers();
+  };
 
-        showToast(`"${name}" created successfully!`);
-        document.getElementById('nft-name').value = '';
-        selectedLayers.clear();
-        renderCreateLayers();
-        renderCollection();
-        switchTab('collection');
-      } catch(err) {
-        btn.disabled = false; 
-        btn.textContent = 'Generate NFT';
-        showToast('Error: ' + err.message);
-      }
+  window.editLayerName = function(id) {
+    const layer = layers.find(l => l.id === id);
+    if (!layer) return;
+    const newName = prompt('Edit layer name:', layer.name);
+    if (newName && newName.trim()) { layer.name = newName.trim(); saveToStorage(); renderLayers(); }
+  };
+
+  // drag & drop handlers
+  function handleDragStart(e, index) {
+    dragSourceIndex = index;
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.closest('.layer-card')?.classList.add('dragging');
+  }
+  function handleDragOver(e, index) {
+    e.preventDefault();
+    if (dragSourceIndex === null) return;
+    const targetCard = e.target.closest('.layer-card');
+    if (targetCard && dragSourceIndex !== index) {
+      document.querySelectorAll('.layer-card').forEach(card => card.classList.remove('drag-over'));
+      targetCard.classList.add('drag-over');
     }
+  }
+  function handleDrop(e, targetIndex) {
+    e.preventDefault();
+    if (dragSourceIndex === null || dragSourceIndex === targetIndex) { resetDrag(); return; }
+    const movedLayer = layers[dragSourceIndex];
+    layers.splice(dragSourceIndex, 1);
+    layers.splice(targetIndex, 0, movedLayer);
+    saveToStorage();
+    renderLayers();
+    resetDrag();
+  }
+  function resetDrag() {
+    document.querySelectorAll('.layer-card').forEach(card => {
+      card.classList.remove('dragging', 'drag-over');
+    });
+    dragSourceIndex = null;
+  }
 
-    // Collection
-    function renderCollection() {
-      const list = document.getElementById('nft-list');
-      const empty = document.getElementById('nft-empty');
-      const count = document.getElementById('nft-count');
-      empty.classList.toggle('hidden', nfts.length > 0);
-      count.textContent = nfts.length ? `${nfts.length} NFT${nfts.length > 1 ? 's' : ''} in collection` : '';
-
-      list.innerHTML = nfts.map(nft => `
-        <div class="nft-card rounded-2xl p-4 glow fade-in" data-nft-id="${nft.id}">
-          <div class="aspect-square rounded-xl overflow-hidden bg-[#0f0f1a] mb-3">
-            <img src="${nft.image}" alt="${nft.name}" class="w-full h-full object-contain" style="image-rendering:crisp-edges;">
-          </div>
-          <h3 class="font-semibold text-base mb-1">${nft.name}</h3>
-          <p class="text-xs text-slate-400 mb-3 mono">${(nft.layers || '').split('|').join(' + ')}</p>
-          <div class="flex gap-2">
-            <button onclick="downloadJSON('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-lg py-2 text-xs font-medium transition-all flex items-center justify-center gap-1">
-              <i data-lucide="download" style="width:14px;height:14px"></i> JSON
-            </button>
-            <button onclick="downloadImage('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-lg py-2 text-xs font-medium transition-all flex items-center justify-center gap-1">
-              <i data-lucide="image" style="width:14px;height:14px"></i> Image
-            </button>
-            <button onclick="deleteNFT('${nft.id}')" class="flex-1 bg-red-900/30 hover:bg-red-900/60 text-red-300 rounded-lg py-2 text-xs font-medium transition-all flex items-center justify-center gap-1">
-              <i data-lucide="trash-2" style="width:14px;height:14px"></i> Delete
-            </button>
-          </div>
+  function renderLayers() {
+    const container = document.getElementById('layers-list');
+    const empty = document.getElementById('layers-empty');
+    empty.classList.toggle('hidden', layers.length > 0);
+    if (!layers.length) { container.innerHTML = ''; return; }
+    container.innerHTML = layers.map((layer, idx) => `
+      <div class="layer-card rounded-xl p-3 fade-in" draggable="true" data-index="${idx}" data-layer-id="${layer.id}">
+        <div class="layer-preview aspect-square rounded-lg overflow-hidden bg-[#0f0f1a] mb-2 flex items-center justify-center">
+          <img src="${layer.dataUrl}" alt="${layer.name}" class="w-full h-full object-contain">
         </div>
-      `).join('');
-      lucide.createIcons();
-    }
+        <p class="layer-name text-xs font-medium truncate mb-2">${escapeHtml(layer.name)}</p>
+        <div class="flex gap-1">
+          <button onclick="editLayerName('${layer.id}')" class="flex-1 text-xs bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded py-1 transition-all">✏️</button>
+          <button onclick="deleteLayer('${layer.id}')" class="flex-1 text-xs bg-red-900/40 hover:bg-red-900/70 text-red-300 rounded py-1 transition-all">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    // attach drag events
+    document.querySelectorAll('.layer-card').forEach((card, i) => {
+      card.setAttribute('draggable', 'true');
+      card.addEventListener('dragstart', (e) => handleDragStart(e, i));
+      card.addEventListener('dragover', (e) => handleDragOver(e, i));
+      card.addEventListener('drop', (e) => handleDrop(e, i));
+      card.addEventListener('dragend', () => resetDrag());
+    });
+    lucide.createIcons();
+  }
 
-    function downloadJSON(id) {
-      const nft = nfts.find(n => n.id === id);
-      if (!nft) { showToast('NFT not found'); return; }
+  // ========== CREATE NFT LOGIC (order respects layers list order) ==========
+  function renderCreateLayers() {
+    const list = document.getElementById('create-layers-list');
+    if (!layers.length) { list.innerHTML = '<p class="col-span-4 text-center text-slate-500 text-sm py-6">➕ Add layers in Layers tab first</p>'; return; }
+    list.innerHTML = layers.map(l => `
+      <div onclick="toggleSelect('${l.id}')" class="cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${selectedLayers.has(l.id) ? 'border-indigo-500 glow' : 'border-[#2a2a4a]'} bg-[#0f0f1a]">
+        <div class="aspect-square bg-[#0f0f1a] flex items-center justify-center p-1">
+          <img src="${l.dataUrl}" alt="${l.name}" class="w-full h-full object-contain">
+        </div>
+        <p class="text-[10px] text-center py-1 truncate px-1 bg-[#1a1a2e]">${escapeHtml(l.name)}</p>
+      </div>
+    `).join('');
+    lucide.createIcons();
+  }
+
+  window.toggleSelect = function(id) {
+    if (selectedLayers.has(id)) selectedLayers.delete(id);
+    else selectedLayers.add(id);
+    renderCreateLayers();
+  };
+
+  async function compositeImage(selectedLayerObjects) {
+    // order: topmost in array is drawn LAST => we draw from bottom (index 0) to top (end)
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 512, 512);
+    // background transparent black by default (preserves transparency)
+    for (let layerObj of selectedLayerObjects) {
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => { ctx.drawImage(img, 0, 0, 512, 512); resolve(); };
+        img.onerror = () => reject(new Error(`Failed to load ${layerObj.name}`));
+        img.src = layerObj.dataUrl;
+      });
+    }
+    return canvas.toDataURL('image/png');
+  }
+
+  window.createNFT = async function() {
+    if (!selectedLayers.size) { showToast('⚠️ Select at least one layer'); return; }
+    const nftName = document.getElementById('nft-name').value.trim();
+    if (!nftName) { showToast('✨ Please enter an NFT name'); return; }
+    if (nfts.length >= 999) { showToast('Max 999 NFTs reached'); return; }
+    const description = document.getElementById('nft-description').value.trim() || `Unique NFT generated with ${selectedLayers.size} layers.`;
+    
+    const btn = document.getElementById('btn-create-nft');
+    btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-circle" style="width:18px;height:18px;animation:spin 1s linear infinite"></i> Generating...'; lucide.createIcons();
+
+    try {
+      // filter layers in the order they appear in layers array (topological: as listed = front to back? wait: draw order: we want the last layer in array to be on top)
+      // layers array order: index 0 = bottom, last = top (visual front). but when rendering we draw in order (0..last) so last drawn = topmost.
+      const selectedInOrder = layers.filter(l => selectedLayers.has(l.id));
+      const imageData = await compositeImage(selectedInOrder);
+      // create attributes array from selected layer names (matching layer order)
+      const attributes = selectedInOrder.map((layer, idx) => ({
+        trait_type: `Layer ${idx+1}`,
+        value: layer.name
+      }));
+      // additional attribute: creation timestamp
+      attributes.push({ trait_type: "Created", value: new Date().toISOString().split('T')[0] });
       
-      try {
-        const metadata = {
-          name: nft.name,
-          description: `NFT generated with layers: ${(nft.layers || '').split('|').join(', ')}`,
-          attributes: (nft.layers || '').split('|').map((l, i) => ({ trait_type: `Layer ${i + 1}`, value: l })),
-          created_at: nft.created_at
-        };
-        
-        const jsonString = JSON.stringify(metadata, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${(nft.name || 'nft').replace(/\s+/g, '_').toLowerCase()}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        showToast('JSON downloaded!');
-      } catch(err) {
-        showToast('Error: ' + err.message);
-      }
+      const nftId = Date.now() + Math.floor(Math.random() * 10000);
+      const newNFT = {
+        id: nftId,
+        name: nftName,
+        description: description,
+        layersString: selectedInOrder.map(l => l.name).join(' | '),
+        image: imageData,
+        created_at: new Date().toISOString(),
+        attributes: attributes
+      };
+      nfts.push(newNFT);
+      saveToStorage();
+      // reset selections & inputs
+      selectedLayers.clear();
+      document.getElementById('nft-name').value = '';
+      document.getElementById('nft-description').value = '';
+      renderCreateLayers();
+      renderCollection();
+      showToast(`✅ "${nftName}" minted!`);
+      switchTab('collection');
+    } catch(err) {
+      showToast(`❌ Error: ${err.message}`);
+    } finally {
+      btn.disabled = false; btn.innerHTML = '⚡ Generate NFT & Metadata'; lucide.createIcons();
     }
+  };
 
-    function downloadImage(id) {
-      const nft = nfts.find(n => n.id === id);
-      if (!nft) { showToast('NFT not found'); return; }
-      
-      try {
-        const link = document.createElement('a');
-        link.href = nft.image;
-        link.download = `${(nft.name || 'nft').replace(/\s+/g, '_').toLowerCase()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast('Image downloaded!');
-      } catch(err) {
-        showToast('Error: ' + err.message);
-      }
-    }
+  // ========== COLLECTION & METADATA MODAL ==========
+  function renderCollection() {
+    const list = document.getElementById('nft-list');
+    const empty = document.getElementById('nft-empty');
+    const countDiv = document.getElementById('nft-count');
+    empty.classList.toggle('hidden', nfts.length > 0);
+    countDiv.innerHTML = nfts.length ? `📸 ${nfts.length} NFT${nfts.length !== 1 ? 's' : ''} in collection` : '';
+    if (!nfts.length) { list.innerHTML = ''; return; }
+    list.innerHTML = nfts.map(nft => `
+      <div class="nft-card rounded-2xl p-4 glow fade-in transition-all hover:scale-[1.02] cursor-pointer" onclick="viewNFTMetadata('${nft.id}')">
+        <div class="aspect-square rounded-xl overflow-hidden bg-[#0f0f1a] mb-3 border border-indigo-900/30">
+          <img src="${nft.image}" alt="${nft.name}" class="w-full h-full object-contain">
+        </div>
+        <h3 class="font-semibold text-base mb-1 truncate">${escapeHtml(nft.name)}</h3>
+        <p class="text-xs text-slate-400 mb-3 mono truncate">${escapeHtml(nft.layersString || 'custom layers')}</p>
+        <div class="flex gap-2" onclick="event.stopPropagation()">
+          <button onclick="downloadNFTJSON('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-1"><i data-lucide="file-json" style="width:14px"></i> JSON</button>
+          <button onclick="downloadNFTImage('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-1"><i data-lucide="image" style="width:14px"></i> Image</button>
+          <button onclick="deleteNFTItem('${nft.id}')" class="flex-1 bg-red-900/30 hover:bg-red-900/60 text-red-300 rounded-lg py-2 text-xs font-medium"><i data-lucide="trash-2" style="width:14px"></i></button>
+        </div>
+      </div>
+    `).join('');
+    lucide.createIcons();
+  }
 
-    function deleteNFT(id) {
-      nfts = nfts.filter(n => n.id !== id);
+  // METADATA MODAL (NFT attributes)
+  window.viewNFTMetadata = function(id) {
+    const nft = nfts.find(n => n.id == id);
+    if (!nft) return;
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'modal-backdrop';
+    const attrsHtml = (nft.attributes || []).map(attr => `<div class="attribute-badge flex justify-between items-center"><span class="text-indigo-300">${escapeHtml(attr.trait_type)}</span><span class="font-mono text-white">${escapeHtml(attr.value)}</span></div>`).join('');
+    modalDiv.innerHTML = `
+      <div class="modal-content max-h-[85vh] overflow-auto">
+        <div class="flex justify-between items-center border-b border-[#2a2a4a] pb-2 mb-3">
+          <h2 class="text-xl font-bold bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-transparent">${escapeHtml(nft.name)}</h2>
+          <button onclick="this.closest('.modal-backdrop').remove()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+        </div>
+        <div class="aspect-square rounded-xl overflow-hidden bg-[#0f0f1a] mb-4 border border-indigo-500/30">
+          <img src="${nft.image}" class="w-full h-full object-contain" alt="preview">
+        </div>
+        <div class="mb-3"><span class="text-slate-400 text-xs">📝 Description</span><p class="text-sm mt-1">${escapeHtml(nft.description || 'No description')}</p></div>
+        <div class="mb-3"><span class="text-slate-400 text-xs">🔗 Layers composition</span><p class="text-xs font-mono mt-1">${escapeHtml(nft.layersString || '—')}</p></div>
+        <div><span class="text-slate-400 text-xs">🏷️ Attributes</span><div class="flex flex-wrap gap-2 mt-2">${attrsHtml || '<span class="text-xs text-slate-500">none</span>'}</div></div>
+        <div class="mt-5 flex gap-2">
+          <button onclick="downloadNFTJSON('${nft.id}'); this.closest('.modal-backdrop').remove();" class="flex-1 bg-indigo-600 py-2 rounded-lg text-sm">📄 Download JSON</button>
+          <button onclick="downloadNFTImage('${nft.id}');" class="flex-1 bg-purple-600 py-2 rounded-lg text-sm">🖼️ Download Image</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modalDiv);
+    modalDiv.addEventListener('click', (e) => { if(e.target === modalDiv) modalDiv.remove(); });
+    lucide.createIcons();
+  };
+
+  // JSON generation with NFT name, description & attributes
+  window.downloadNFTJSON = function(id) {
+    const nft = nfts.find(n => n.id == id);
+    if (!nft) { showToast('NFT not found'); return; }
+    const metadata = {
+      name: nft.name,
+      description: nft.description || `Generated with NFT Layer Studio. Layers: ${nft.layersString || 'custom'}`,
+      image: nft.image,  // embedded dataURL for portability
+      attributes: nft.attributes || [],
+      created_at: nft.created_at,
+      collection_version: "1.0"
+    };
+    const jsonStr = JSON.stringify(metadata, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${nft.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_metadata.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('📦 JSON metadata saved');
+  };
+
+  window.downloadNFTImage = function(id) {
+    const nft = nfts.find(n => n.id == id);
+    if (!nft) return;
+    const a = document.createElement('a');
+    a.href = nft.image;
+    a.download = `${nft.name.replace(/[^a-z0-9]/gi, '_')}_nft.png`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast('🖼️ Image downloaded');
+  };
+
+  window.deleteNFTItem = function(id) {
+    if (confirm('Delete this NFT permanently?')) {
+      nfts = nfts.filter(n => n.id != id);
       saveToStorage();
       renderCollection();
-      showToast('NFT deleted!');
+      showToast('🗑️ NFT removed');
     }
+  };
 
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg; t.classList.remove('hidden');
-      setTimeout(() => t.classList.add('hidden'), 2500);
-    }
-
-    lucide.createIcons();
-  </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9febfabc407b7219',t:'MTc3OTI4Njc5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+  // ========== UTILITIES ==========
+  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m;}); }
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 2600);
+  }
+  // inject spin style
+  const style = document.createElement('style');
+  style.textContent = `@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }`;
+  document.head.appendChild(style);
+  lucide.createIcons();
+</script>
+</body>
 </html>
