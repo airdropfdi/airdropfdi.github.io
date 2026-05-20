@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>NFT Layer Studio | Complete Layer Control</title>
+  <title>NFT Layer Studio | Trait Type + Value</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -49,10 +49,10 @@
   <!-- HEADER -->
   <header class="p-4 border-b border-[#2a2a4a] flex items-center justify-between bg-[#0f0f1a]/90 backdrop-blur-sm sticky top-0 z-10">
     <h1 id="app-title" class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">NFT Layer Studio</h1>
-    <span class="mono text-xs text-slate-500">v2.0 · Full Layer Control</span>
+    <span class="mono text-xs text-slate-500">Trait Type → Value</span>
   </header>
 
-  <!-- TABS WITH CUSTOM ICONS -->
+  <!-- TABS -->
   <div class="flex p-3 gap-2 border-b border-[#1f1f30] bg-[#0f0f1a]/50">
     <button onclick="window.switchTab('layers')" id="tab-layers" class="tab-active px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-1">
       <img src="https://github.com/airdropfdi/airdropfdi.github.io/blob/main/Icon/layers.png?raw=true" class="tab-icon" alt="layers" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2218%22 height=%2218%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22%3E%3Crect x=%223%22 y=%223%22 width=%2218%22 height=%2218%22 rx=%222%22/%3E%3C/svg%3E'"> Layers
@@ -65,7 +65,7 @@
     </button>
   </div>
 
-  <!-- MAIN CONTENT AREA -->
+  <!-- MAIN CONTENT -->
   <div class="flex-1 overflow-auto p-4">
     <!-- LAYERS PANEL -->
     <div id="panel-layers" class="space-y-4">
@@ -73,7 +73,7 @@
         <label class="flex-1 relative">
           <input type="file" id="layer-upload" accept="image/*" multiple class="w-full text-sm text-slate-400 file:mr-3 file:rounded-lg">
         </label>
-        <input type="text" id="layer-name" placeholder="Layer trait name (e.g., Background, Character, Effect)" class="flex-1 bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+        <input type="text" id="layer-trait-type" placeholder="Trait Type (e.g., Background, Character, Weapon)" class="flex-1 bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
         <button onclick="window.addLayer()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 py-3 font-medium transition-all flex items-center justify-center gap-2 shadow-lg">
           <i data-lucide="plus" style="width:18px;height:18px"></i> Add Layer
         </button>
@@ -83,14 +83,14 @@
         Drag & drop to reorder layers (bottom layer = background, top layer = foreground)
       </div>
       <div id="layers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mt-2"></div>
-      <p id="layers-empty" class="text-center text-slate-500 text-sm py-12">No layers yet. Upload images (PNG, JPG). First layer = background (bottom).</p>
+      <p id="layers-empty" class="text-center text-slate-500 text-sm py-12">No layers yet. Upload images.</p>
     </div>
 
     <!-- CREATE NFT PANEL -->
     <div id="panel-create" class="space-y-5 hidden">
       <div class="bg-[#1a1a2e]/50 p-3 rounded-xl">
-        <p class="text-sm text-indigo-300 flex items-center gap-2"><i data-lucide="layers" style="width:16px"></i> Select layers to combine (order respects layer list)</p>
-        <p class="text-xs text-slate-400 mt-1">⬇️ Bottom layer (first added) = background | Top layer = foreground</p>
+        <p class="text-sm text-indigo-300 flex items-center gap-2"><i data-lucide="layers" style="width:16px"></i> Select layers to combine</p>
+        <p class="text-xs text-slate-400 mt-1">⬇️ Bottom layer = background | Top layer = foreground</p>
       </div>
       <div id="create-layers-list" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-80 overflow-auto p-1"></div>
       <input type="text" id="nft-name" placeholder="NFT Name (e.g. 'Cyber Dragon #42')" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
@@ -98,7 +98,6 @@
       <button onclick="window.createNFT()" id="btn-create-nft" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl py-3 font-semibold transition-all shadow-xl flex items-center justify-center gap-2">
         <i data-lucide="sparkles" style="width:18px"></i> Generate NFT & Metadata
       </button>
-      <div id="create-preview" class="hidden mt-2"></div>
     </div>
 
     <!-- COLLECTION PANEL -->
@@ -109,13 +108,13 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION -->
+  <!-- TOAST -->
   <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-indigo-600/95 backdrop-blur-md text-white px-5 py-3 rounded-xl text-sm text-center hidden transition-all z-50 shadow-xl border border-indigo-400 font-medium"></div>
 </div>
 
 <script>
-  // ========== GLOBAL STATE ==========
-  let layers = [];           // { id, name, dataUrl, fileName }
+  // ========== STATE ==========
+  let layers = [];           // { id, traitType, value, dataUrl }
   let selectedLayersSet = new Set();
   let nfts = [];
   let currentTab = 'layers';
@@ -123,8 +122,8 @@
 
   function loadFromStorage() {
     try {
-      const storedLayers = localStorage.getItem('nft_layers_v5');
-      const storedNFTs = localStorage.getItem('nft_collection_v5');
+      const storedLayers = localStorage.getItem('nft_layers_v6');
+      const storedNFTs = localStorage.getItem('nft_collection_v6');
       if (storedLayers) layers = JSON.parse(storedLayers);
       if (storedNFTs) nfts = JSON.parse(storedNFTs);
     } catch(e) { console.warn(e); }
@@ -133,8 +132,8 @@
   }
 
   function saveToStorage() {
-    localStorage.setItem('nft_layers_v5', JSON.stringify(layers));
-    localStorage.setItem('nft_collection_v5', JSON.stringify(nfts));
+    localStorage.setItem('nft_layers_v6', JSON.stringify(layers));
+    localStorage.setItem('nft_collection_v6', JSON.stringify(nfts));
   }
 
   window.switchTab = function(tab) {
@@ -156,46 +155,63 @@
     lucide.createIcons();
   };
 
+  // ========== ADD LAYER (Trait Type from input) ==========
   window.addLayer = function() {
     const input = document.getElementById('layer-upload');
-    const traitNameInput = document.getElementById('layer-name');
+    const traitTypeInput = document.getElementById('layer-trait-type');
+    
     if (!input.files || input.files.length === 0) {
       window.showToast('Please select an image');
       return;
     }
     
+    let traitType = traitTypeInput.value.trim();
+    if (!traitType) {
+      window.showToast('Please enter a Trait Type (e.g., Background, Character)');
+      return;
+    }
+    
     const filesArray = Array.from(input.files);
     let addedCount = 0;
+    
     filesArray.forEach((file, idx) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        let traitName = traitNameInput.value.trim();
-        if (!traitName) {
-          traitName = file.name.replace(/\.[^.]+$/, '');
+        let finalTraitType = traitType;
+        if (filesArray.length > 1) {
+          finalTraitType = `${traitType}_${idx + 1}`;
         }
-        if (filesArray.length > 1 && traitNameInput.value.trim()) {
-          traitName = `${traitName}_${idx + 1}`;
-        }
-        
-        const originalFileName = file.name;
         
         layers.push({ 
           id: Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 6), 
-          name: traitName,
-          fileName: originalFileName,
+          traitType: finalTraitType,
+          value: "",  // Empty initially, user will set via Edit button
           dataUrl: e.target.result 
         });
         addedCount++;
         if (addedCount === filesArray.length) {
           saveToStorage();
           renderLayers();
-          window.showToast(`✅ ${filesArray.length} layer(s) added. First layer is at BOTTOM (background).`);
+          window.showToast(`✅ ${filesArray.length} layer(s) added. Click Edit to set Value.`);
         }
       };
       reader.readAsDataURL(file);
     });
     input.value = '';
-    traitNameInput.value = '';
+    traitTypeInput.value = '';
+  };
+
+  // ========== EDIT VALUE (Second box - this becomes the attribute value) ==========
+  window.editLayerValue = function(id) {
+    const layer = layers.find(l => l.id === id);
+    if (!layer) return;
+    const newValue = prompt('Enter Value for this layer (this will be the attribute value in JSON):', layer.value || '');
+    if (newValue !== null) { 
+      layer.value = newValue.trim() || ''; 
+      saveToStorage(); 
+      renderLayers(); 
+      window.showToast(`Value set: ${layer.value || '(empty)'}`);
+    }
   };
 
   window.deleteLayer = function(id) {
@@ -208,18 +224,7 @@
     }
   };
 
-  window.editLayerName = function(id) {
-    const layer = layers.find(l => l.id === id);
-    if (!layer) return;
-    const newName = prompt('Enter trait name (will appear as trait_type in JSON):', layer.name);
-    if (newName && newName.trim()) { 
-      layer.name = newName.trim(); 
-      saveToStorage(); 
-      renderLayers(); 
-      window.showToast('Trait name updated');
-    }
-  };
-
+  // ========== DRAG & DROP ==========
   function handleDragStart(e, index) {
     dragSourceIndex = index;
     e.dataTransfer.effectAllowed = 'move';
@@ -262,15 +267,15 @@
     container.innerHTML = layers.map((layer, idx) => `
       <div class="layer-card rounded-xl p-3 fade-in" draggable="true" data-index="${idx}" data-layer-id="${layer.id}">
         <div class="layer-preview aspect-square rounded-lg overflow-hidden bg-[#0f0f1a] mb-2 flex items-center justify-center border border-[#2a2a4a]">
-          <img src="${layer.dataUrl}" alt="${escapeHtml(layer.name)}" class="w-full h-full object-contain">
+          <img src="${layer.dataUrl}" alt="${layer.traitType}" class="w-full h-full object-contain">
         </div>
-        <p class="layer-name text-xs font-medium truncate mb-1 text-center">${escapeHtml(layer.name)}</p>
-        <p class="text-[9px] text-slate-500 truncate text-center mb-2">📄 ${escapeHtml(layer.fileName)}</p>
+        <p class="text-xs font-bold text-indigo-300 truncate text-center">${escapeHtml(layer.traitType)}</p>
+        <p class="text-xs text-slate-400 truncate text-center mb-2">→ Value: ${escapeHtml(layer.value) || '(not set)'}</p>
         <div class="flex gap-1">
-          <button onclick="window.editLayerName('${layer.id}')" class="flex-1 text-xs bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-lg py-1.5 transition-all">Edit Trait</button>
+          <button onclick="window.editLayerValue('${layer.id}')" class="flex-1 text-xs bg-emerald-900/40 hover:bg-emerald-700 text-emerald-300 rounded-lg py-1.5 transition-all">✏️ Set Value</button>
           <button onclick="window.deleteLayer('${layer.id}')" class="flex-1 text-xs bg-red-900/40 hover:bg-red-900/70 text-red-300 rounded-lg py-1.5 transition-all">Delete</button>
         </div>
-        ${idx === 0 ? '<div class="text-[9px] text-indigo-400 text-center mt-1">⬇️ BOTTOM (BG)</div>' : idx === layers.length-1 ? '<div class="text-[9px] text-purple-400 text-center mt-1">⬆️ TOP (FG)</div>' : ''}
+        ${idx === 0 ? '<div class="text-[9px] text-indigo-400 text-center mt-1">⬇️ BOTTOM</div>' : idx === layers.length-1 ? '<div class="text-[9px] text-purple-400 text-center mt-1">⬆️ TOP</div>' : ''}
       </div>
     `).join('');
     
@@ -292,16 +297,22 @@
     container.innerHTML = layers.map(l => `
       <div onclick="window.toggleLayerSelect('${l.id}')" class="cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${selectedLayersSet.has(l.id) ? 'border-indigo-500 glow' : 'border-[#2a2a4a]'} bg-[#0f0f1a] hover:scale-105 transition-transform">
         <div class="aspect-square bg-[#0f0f1a] flex items-center justify-center p-1">
-          <img src="${l.dataUrl}" alt="${l.name}" class="w-full h-full object-contain">
+          <img src="${l.dataUrl}" alt="${l.traitType}" class="w-full h-full object-contain">
         </div>
-        <p class="text-[10px] text-center py-1.5 truncate px-1 bg-[#1a1a2e] font-medium">${escapeHtml(l.name)}</p>
-        <p class="text-[8px] text-slate-500 text-center pb-1 truncate">${escapeHtml(l.fileName)}</p>
+        <p class="text-[10px] font-bold text-indigo-300 text-center py-1 truncate px-1">${escapeHtml(l.traitType)}</p>
+        <p class="text-[9px] text-slate-400 text-center pb-1 truncate">${escapeHtml(l.value) || 'Value not set'}</p>
       </div>
     `).join('');
     lucide.createIcons();
   }
 
   window.toggleLayerSelect = function(id) {
+    const layer = layers.find(l => l.id === id);
+    if (!layer) return;
+    if (!layer.value) {
+      window.showToast(`⚠️ Please set a Value for "${layer.traitType}" first (click Edit button)`);
+      return;
+    }
     if (selectedLayersSet.has(id)) selectedLayersSet.delete(id);
     else selectedLayersSet.add(id);
     renderCreateLayers();
@@ -317,7 +328,7 @@
       await new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => { ctx.drawImage(img, 0, 0, 512, 512); resolve(); };
-        img.onerror = () => reject(new Error(`Failed to load ${layerObj.name}`));
+        img.onerror = () => reject(new Error(`Failed to load ${layerObj.traitType}`));
         img.src = layerObj.dataUrl;
       });
     }
@@ -349,9 +360,10 @@
       const selectedInOrder = layers.filter(l => selectedLayersSet.has(l.id));
       const imageData = await compositeImage(selectedInOrder);
       
+      // Attributes: trait_type = user's trait type, value = user's value
       const attributes = selectedInOrder.map((layer) => ({
-        trait_type: layer.name,
-        value: layer.fileName
+        trait_type: layer.traitType,
+        value: layer.value
       }));
       
       attributes.push({ trait_type: "Total Layers", value: selectedInOrder.length.toString() });
@@ -362,7 +374,7 @@
         id: Date.now() + Math.floor(Math.random() * 10000),
         name: nftName,
         description: description,
-        layersString: selectedInOrder.map(l => `${l.name}: ${l.fileName}`).join(' → '),
+        layersString: selectedInOrder.map(l => `${l.traitType}: ${l.value}`).join(' → '),
         image: imageData,
         attributes: attributes,
         cidPlaceholder: cidPlaceholder
@@ -377,7 +389,7 @@
       renderCreateLayers();
       renderCollection();
       
-      window.showToast(`✅ "${nftName}" created successfully!`);
+      window.showToast(`✅ "${nftName}" created!`);
       window.switchTab('collection');
     } catch(err) {
       window.showToast(`Error: ${err.message}`);
@@ -437,9 +449,9 @@
           <img src="${nft.image}" class="w-full h-full object-contain" alt="preview">
         </div>
         <div class="mb-3"><span class="text-slate-400 text-xs">📝 Description</span><p class="text-sm mt-1 bg-[#1a1a2e] p-2 rounded-lg">${escapeHtml(nft.description)}</p></div>
-        <div class="mb-3"><span class="text-slate-400 text-xs">🔗 Layer order (Trait → File)</span><p class="text-xs font-mono mt-1 bg-[#1a1a2e] p-2 rounded-lg">${escapeHtml(nft.layersString || '—')}</p></div>
-        <div class="mb-3"><span class="text-slate-400 text-xs">📦 CID (IPFS Placeholder)</span><p class="text-xs font-mono mt-1 bg-indigo-900/30 p-2 rounded-lg border border-indigo-500/30">${escapeHtml(nft.cidPlaceholder)}</p></div>
-        <div><span class="text-slate-400 text-xs">🏷️ Attributes (trait_type → value)</span><div class="flex flex-wrap gap-2 mt-2">${attrsHtml || '<span class="text-xs text-slate-500">No attributes</span>'}</div></div>
+        <div class="mb-3"><span class="text-slate-400 text-xs">🔗 Layer composition</span><p class="text-xs font-mono mt-1 bg-[#1a1a2e] p-2 rounded-lg">${escapeHtml(nft.layersString || '—')}</p></div>
+        <div class="mb-3"><span class="text-slate-400 text-xs">📦 CID Placeholder</span><p class="text-xs font-mono mt-1 bg-indigo-900/30 p-2 rounded-lg border border-indigo-500/30">${escapeHtml(nft.cidPlaceholder)}</p></div>
+        <div><span class="text-slate-400 text-xs">🏷️ Attributes (Trait Type → Value)</span><div class="flex flex-wrap gap-2 mt-2">${attrsHtml || '<span class="text-xs text-slate-500">No attributes</span>'}</div></div>
         <div class="mt-5 flex gap-2">
           <button onclick="window.downloadJSON('${nft.id}'); this.closest('.modal-backdrop').remove();" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-2.5 rounded-xl text-sm font-medium">📄 Download JSON</button>
           <button onclick="window.downloadImage('${nft.id}');" class="flex-1 bg-purple-600 hover:bg-purple-700 py-2.5 rounded-xl text-sm font-medium">🖼️ Download Image</button>
@@ -470,7 +482,7 @@
     a.download = `${nft.name.replace(/[^a-z0-9]/gi, '_')}_metadata.json`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    window.showToast('JSON metadata with CID placeholder downloaded');
+    window.showToast('JSON metadata downloaded');
   };
 
   window.downloadImage = function(id) {
