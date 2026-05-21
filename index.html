@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>NEXT PUNK</title>
+  <title>404 PUNKS</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -53,14 +53,15 @@
     .bg-badge { background: rgba(16, 185, 129, 0.2); border-left: 3px solid #10b981; }
     .accordion-icon { transition: transform 0.2s; }
     .rotate-180 { transform: rotate(180deg); }
+    .preview-canvas { border: 2px solid #2a2a4a; border-radius: 1rem; background: #0f0f1a; }
   </style>
 </head>
 <body class="h-full overflow-auto">
 <div id="app" class="w-full h-full flex flex-col">
   <!-- HEADER -->
   <header class="p-4 border-b border-[#2a2a4a] flex items-center justify-between bg-[#0f0f1a]/90 backdrop-blur-sm sticky top-0 z-10">
-    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">NEXT PUNKS</h1>
-    <span class="mono text-xs text-slate-500">Background (UI only)</span>
+    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">404 PUNKS</h1>
+    <span class="mono text-xs text-slate-500">Glitch Edition</span>
   </header>
 
   <!-- TABS -->
@@ -80,7 +81,6 @@
   <div class="flex-1 overflow-auto p-4">
     <!-- LAYERS PANEL -->
     <div id="panel-layers" class="space-y-4">
-      <!-- Add Layer Form -->
       <div class="bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a4a]">
         <h3 class="text-sm font-semibold mb-3 text-indigo-300">Add New Layer from GitHub URL</h3>
         <div class="flex flex-col gap-3">
@@ -139,14 +139,26 @@
         <p class="text-xs text-emerald-300 mt-1">🌄 <strong>Background</strong> layer is UI only - will NOT appear in JSON attributes</p>
       </div>
       
-      <div id="create-sections-container" class="space-y-3"></div>
+      <!-- Live Preview Section -->
+      <div class="bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a4a]">
+        <h3 class="text-sm font-semibold text-indigo-300 mb-3 flex items-center gap-2"><i data-lucide="eye" style="width:16px"></i> Live Preview</h3>
+        <div class="flex justify-center">
+          <canvas id="live-preview-canvas" width="200" height="200" class="preview-canvas w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64"></canvas>
+        </div>
+        <p class="text-xs text-slate-400 text-center mt-2">Preview updates as you select layers</p>
+      </div>
+      
+      <div id="create-sections-container" class="space-y-3 max-h-[40vh] overflow-auto"></div>
       
       <div class="bg-[#1a1a2e]/30 p-3 rounded-xl" id="selected-order-preview">
         <p class="text-xs text-slate-400">Selected layers order (bottom to top):</p>
         <div id="order-preview-list" class="flex flex-wrap gap-2 mt-2"></div>
       </div>
-      <input type="text" id="nft-name" placeholder="NFT Name" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-      <input type="text" id="nft-description" placeholder="Description (optional)" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+      
+      <!-- Auto-filled NFT Name and Description -->
+      <input type="text" id="nft-name" value="404 Punks" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+      <textarea id="nft-description" rows="3" class="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">404 Punks is a rare CryptoPunks inspired collection where each punk is a not found glitch version of the original punk universe lost, unique, and future-valued digital assets</textarea>
+      
       <button onclick="window.createNFT()" id="btn-create-nft" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl py-3 font-semibold transition-all flex items-center justify-center gap-2">
         <i data-lucide="sparkles" style="width:18px"></i> Generate NFT
       </button>
@@ -166,7 +178,6 @@
 
 <script>
   // ========== STATE ==========
-  // Background section added - UI only, not added to JSON attributes
   let layersBySection = {
     "Background": [], "Base": [], "Nose": [], "Neck": [], "Face": [], "Accessory": [], "Mouth": [], "Ear": [], "Beard": [], "Eyes": [], "Head": []
   };
@@ -174,6 +185,8 @@
   let nfts = [];
   let currentTab = 'layers';
   let nextId = 1;
+  let previewCanvas = null;
+  let previewCtx = null;
   
   let openSectionLayers = null;
   let openSectionCreate = null;
@@ -183,7 +196,7 @@
   function loadFromStorage() {
     try {
       const storedSections = localStorage.getItem('nft_layers_sections_gender');
-      const storedNFTs = localStorage.getItem('nft_collection_v14');
+      const storedNFTs = localStorage.getItem('nft_collection_v15');
       if (storedSections) layersBySection = JSON.parse(storedSections);
       if (storedNFTs) nfts = JSON.parse(storedNFTs);
       for (let section of SECTIONS) {
@@ -197,7 +210,7 @@
 
   function saveToStorage() {
     localStorage.setItem('nft_layers_sections_gender', JSON.stringify(layersBySection));
-    localStorage.setItem('nft_collection_v14', JSON.stringify(nfts));
+    localStorage.setItem('nft_collection_v15', JSON.stringify(nfts));
   }
 
   window.switchTab = function(tab) {
@@ -210,10 +223,43 @@
     document.getElementById('tab-create').className = tab === 'create' ? 'tab-active px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1 whitespace-nowrap' : 'tab-inactive px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1 whitespace-nowrap';
     document.getElementById('tab-collection').className = tab === 'collection' ? 'tab-active px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1 whitespace-nowrap' : 'tab-inactive px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-1 whitespace-nowrap';
     
-    if (tab === 'create') renderCreateSections();
+    if (tab === 'create') {
+      renderCreateSections();
+      initPreviewCanvas();
+      updateLivePreview();
+    }
     if (tab === 'collection') renderCollection();
     lucide.createIcons();
   };
+
+  function initPreviewCanvas() {
+    previewCanvas = document.getElementById('live-preview-canvas');
+    if (previewCanvas) previewCtx = previewCanvas.getContext('2d');
+  }
+
+  async function updateLivePreview() {
+    if (!previewCtx || selectedOrder.length === 0) {
+      if (previewCtx) {
+        previewCtx.clearRect(0, 0, 200, 200);
+        previewCtx.fillStyle = '#0f0f1a';
+        previewCtx.fillRect(0, 0, 200, 200);
+      }
+      return;
+    }
+    
+    for (let item of selectedOrder) {
+      await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          previewCtx.drawImage(img, 0, 0, 200, 200);
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = item.imageUrl;
+      });
+    }
+  }
 
   window.addLayerFromURL = function() {
     const urlInput = document.getElementById('github-url');
@@ -261,6 +307,7 @@
       renderSections();
       renderCreateSections();
       updateOrderPreview();
+      updateLivePreview();
       window.showToast('Layer deleted');
     }
   };
@@ -301,7 +348,7 @@
         <div class="section-card ${bgClass}">
           <div onclick="window.toggleSectionLayers('${section}')" class="section-header p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <i data-lucide="${isBackground ? 'image' : 'folder'}" style="width:20px" class="text-indigo-400"></i>
+              <img src="https://github.com/nextpunks/nextpunks.github.io/blob/main/Icon/folder.png?raw=true" style="width:20px;height:20px" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236366f1%22 stroke-width=%222%22%3E%3Cpath d=%22M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z%22/%3E%3C/svg%3E'">
               <span class="font-bold ${isBackground ? 'text-emerald-400' : 'text-indigo-300'}">${section}</span>
               <span class="text-xs text-slate-500">(${layers.length} layers)</span>
               <span class="text-xs ${isBackground ? 'bg-emerald-900/50 text-emerald-300' : 'bg-indigo-900/50'} px-2 py-0.5 rounded-full">${traitTypeLabel}</span>
@@ -356,7 +403,7 @@
         <div class="section-card ${bgClass}">
           <div onclick="window.toggleSectionCreate('${section}')" class="section-header p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <i data-lucide="${isBackground ? 'image' : 'folder'}" style="width:20px" class="text-indigo-400"></i>
+              <img src="https://github.com/nextpunks/nextpunks.github.io/blob/main/Icon/folder.png?raw=true" style="width:20px;height:20px" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2220%22 height=%2220%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236366f1%22 stroke-width=%222%22%3E%3Cpath d=%22M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z%22/%3E%3C/svg%3E'">
               <span class="font-bold ${isBackground ? 'text-emerald-400' : 'text-indigo-300'}">${section}</span>
               <span class="text-xs text-slate-500">(${layers.length} layers)</span>
               <span class="text-xs ${isBackground ? 'bg-emerald-900/50 text-emerald-300' : 'bg-indigo-900/50'} px-2 py-0.5 rounded-full">${traitTypeLabel}</span>
@@ -401,7 +448,7 @@
     return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
   }
 
-  window.toggleLayerSelection = function(section, layerId, value, imageUrl, gender) {
+  window.toggleLayerSelection = async function(section, layerId, value, imageUrl, gender) {
     const existingIndex = selectedOrder.findIndex(item => item.section === section);
     
     if (existingIndex !== -1) {
@@ -419,6 +466,14 @@
       selectedOrder.push(newOrder);
     }
     renderCreateSections();
+    
+    // Reset and redraw preview
+    if (previewCtx) {
+      previewCtx.clearRect(0, 0, 200, 200);
+      previewCtx.fillStyle = '#0f0f1a';
+      previewCtx.fillRect(0, 0, 200, 200);
+    }
+    await updateLivePreview();
   };
 
   function updateOrderPreview() {
@@ -473,10 +528,8 @@
       return;
     }
     
-    const nftName = document.getElementById('nft-name').value.trim();
-    if (!nftName) { window.showToast('Enter NFT name'); return; }
-    
-    const description = document.getElementById('nft-description').value.trim() || `NFT with ${selectedOrder.length} layers`;
+    const nftName = document.getElementById('nft-name').value.trim() || "404 Punks";
+    const description = document.getElementById('nft-description').value.trim() || "404 Punks is a rare CryptoPunks inspired collection where each punk is a not found glitch version of the original punk universe lost, unique, and future-valued digital assets";
     
     const btn = document.getElementById('btn-create-nft');
     const originalText = btn.innerHTML;
@@ -486,7 +539,6 @@
     try {
       const imageData = await compositeFromSelected();
       
-      // Build attributes - EXCLUDE Background section from JSON
       const attributes = selectedOrder
         .filter(item => item.section !== "Background")
         .map(item => ({
@@ -511,12 +563,16 @@
       saveToStorage();
       
       selectedOrder = [];
-      document.getElementById('nft-name').value = '';
-      document.getElementById('nft-description').value = '';
       renderCreateSections();
       renderCollection();
       
-      window.showToast(`✅ "${nftName}" created! (Background not added to JSON)`);
+      if (previewCtx) {
+        previewCtx.clearRect(0, 0, 200, 200);
+        previewCtx.fillStyle = '#0f0f1a';
+        previewCtx.fillRect(0, 0, 200, 200);
+      }
+      
+      window.showToast(`✅ "${nftName}" created!`);
       window.switchTab('collection');
     } catch(err) {
       window.showToast(`Error: ${err.message}`);
@@ -545,9 +601,9 @@
         <h3 class="font-semibold text-base mb-1 truncate">${escapeHtml(nft.name)}</h3>
         <p class="text-xs text-slate-400 mb-3 mono">${nft.attributes.length - 1} attributes</p>
         <div class="flex gap-2" onclick="event.stopPropagation()">
-          <button onclick="window.downloadJSON('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-xl py-2 text-xs font-medium flex items-center justify-center gap-1"><i data-lucide="file-json" style="width:14px"></i> JSON</button>
-          <button onclick="window.downloadImage('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-xl py-2 text-xs font-medium flex items-center justify-center gap-1"><i data-lucide="image" style="width:14px"></i> Image</button>
-          <button onclick="window.deleteNFT('${nft.id}')" class="flex-1 bg-red-900/30 hover:bg-red-900/60 text-red-300 rounded-xl py-2 text-xs font-medium"><i data-lucide="trash-2" style="width:14px"></i></button>
+          <button onclick="window.downloadImage('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-xl py-2 text-xs font-medium flex items-center justify-center gap-1"><img src="https://github.com/nextpunks/nextpunks.github.io/blob/main/Icon/landscape.png?raw=true" style="width:14px;height:14px" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22%3E%3Crect x=%222%22 y=%222%22 width=%2220%22 height=%2220%22 rx=%222%22/%3E%3C/svg%3E'"> Image</button>
+          <button onclick="window.downloadJSON('${nft.id}')" class="flex-1 bg-[#2a2a4a] hover:bg-[#3a3a5a] rounded-xl py-2 text-xs font-medium flex items-center justify-center gap-1"><img src="https://github.com/nextpunks/nextpunks.github.io/blob/main/Icon/attachment.png?raw=true" style="width:14px;height:14px" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222%22%3E%3Cpath d=%22M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48%22/%3E%3C/svg%3E'"> JSON</button>
+          <button onclick="window.deleteNFT('${nft.id}')" class="flex-1 bg-red-900/30 hover:bg-red-900/60 text-red-300 rounded-xl py-2 text-xs font-medium flex items-center justify-center gap-1"><img src="https://github.com/nextpunks/nextpunks.github.io/blob/main/Icon/delete.png?raw=true" style="width:14px;height:14px" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23fca5a5%22 stroke-width=%222%22%3E%3Cpath d=%22M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2%22/%3E%3C/svg%3E'"></button>
         </div>
       </div>
     `).join('');
@@ -577,7 +633,7 @@
         </div>
         <div class="mb-3"><span class="text-slate-400 text-xs">Description</span><p class="text-sm mt-1 bg-[#1a1a2e] p-2 rounded-lg">${escapeHtml(nft.description)}</p></div>
         <div class="mb-3"><span class="text-slate-400 text-xs">CID Placeholder</span><p class="text-xs font-mono mt-1 bg-indigo-900/30 p-2 rounded-lg">${escapeHtml(nft.cidPlaceholder)}</p></div>
-        <div><span class="text-slate-400 text-xs">Attributes (Background excluded)</span><div class="flex flex-wrap gap-2 mt-2">${attrsHtml}</div></div>
+        <div><span class="text-slate-400 text-xs">Attributes</span><div class="flex flex-wrap gap-2 mt-2">${attrsHtml}</div></div>
         <div class="mt-5 flex gap-2">
           <button onclick="window.downloadJSON('${nft.id}'); this.closest('.modal-backdrop').remove();" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-2.5 rounded-xl text-sm font-medium">Download JSON</button>
           <button onclick="window.downloadImage('${nft.id}');" class="flex-1 bg-purple-600 hover:bg-purple-700 py-2.5 rounded-xl text-sm font-medium">Download Image</button>
@@ -653,6 +709,7 @@
   
   loadFromStorage();
   lucide.createIcons();
+  initPreviewCanvas();
 </script>
 </body>
 </html>
