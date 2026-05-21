@@ -50,6 +50,7 @@
     }
     .male-bg { background: rgba(37, 99, 235, 0.15); border-left: 3px solid #3b82f6; }
     .female-bg { background: rgba(236, 72, 153, 0.15); border-left: 3px solid #ec4899; }
+    .bg-badge { background: rgba(16, 185, 129, 0.2); border-left: 3px solid #10b981; }
     .accordion-icon { transition: transform 0.2s; }
     .rotate-180 { transform: rotate(180deg); }
   </style>
@@ -59,7 +60,7 @@
   <!-- HEADER -->
   <header class="p-4 border-b border-[#2a2a4a] flex items-center justify-between bg-[#0f0f1a]/90 backdrop-blur-sm sticky top-0 z-10">
     <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">NEXT PUNKS</h1>
-    <span class="mono text-xs text-slate-500">Accordion Sections</span>
+    <span class="mono text-xs text-slate-500">Background (UI only)</span>
   </header>
 
   <!-- TABS -->
@@ -75,11 +76,11 @@
     </button>
   </div>
 
-  <!-- CONTENT - Normal scrolling, no sticky form -->
+  <!-- CONTENT -->
   <div class="flex-1 overflow-auto p-4">
     <!-- LAYERS PANEL -->
     <div id="panel-layers" class="space-y-4">
-      <!-- Add Layer Form - NOT STICKY, scrolls normally -->
+      <!-- Add Layer Form -->
       <div class="bg-[#1a1a2e] rounded-xl p-4 border border-[#2a2a4a]">
         <h3 class="text-sm font-semibold mb-3 text-indigo-300">Add New Layer from GitHub URL</h3>
         <div class="flex flex-col gap-3">
@@ -87,6 +88,7 @@
           <div class="flex flex-col sm:flex-row gap-3">
             <input type="text" id="layer-value" placeholder="Value (e.g., Red Hair, Blue Skin)" class="flex-1 bg-[#0f0f1a] border border-[#2a2a4a] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
             <select id="layer-section" class="flex-1 bg-[#0f0f1a] border border-[#2a2a4a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="Background">Background (UI only - NOT in JSON)</option>
               <option value="Base">Base (trait_type: Base)</option>
               <option value="Nose">Nose</option>
               <option value="Neck">Neck</option>
@@ -120,10 +122,9 @@
 
       <div class="text-xs text-slate-400 bg-[#1a1a2e]/50 p-2 rounded-lg flex items-center gap-2 flex-wrap">
         <img src="https://github.com/airdropfdi/airdropfdi.github.io/blob/main/Icon/drag-and-drop.png?raw=true" style="width:16px;height:16px;" onerror="this.style.display='none'">
-        Click on folder to expand/collapse | Selection order = first selected = bottom
+        Click on folder to expand/collapse | Background layer = UI only (NOT in JSON)
       </div>
       
-      <!-- Folders Container -->
       <div id="sections-container" class="space-y-3"></div>
       <p id="layers-empty" class="text-center text-slate-500 text-sm py-12">No layers yet. Add GitHub image URLs above.</p>
     </div>
@@ -134,7 +135,8 @@
         <p class="text-sm text-indigo-300">Click on layers to select them in order</p>
         <p class="text-xs text-slate-400 mt-1">📌 First click = Bottom layer | Last click = Top layer</p>
         <p class="text-xs text-yellow-300 mt-1">🏷️ <strong>Base</strong> section = trait_type "Base" | Others = trait_type "Accessory"</p>
-        <p class="text-xs text-green-300 mt-1">⚧ Click folder to expand/collapse sections</p>
+        <p class="text-xs text-green-300 mt-1">⚧ Gender icons are UI only - not added to JSON</p>
+        <p class="text-xs text-emerald-300 mt-1">🌄 <strong>Background</strong> layer is UI only - will NOT appear in JSON attributes</p>
       </div>
       
       <div id="create-sections-container" class="space-y-3"></div>
@@ -164,8 +166,9 @@
 
 <script>
   // ========== STATE ==========
+  // Background section added - UI only, not added to JSON attributes
   let layersBySection = {
-    "Base": [], "Nose": [], "Neck": [], "Face": [], "Accessory": [], "Mouth": [], "Ear": [], "Beard": [], "Eyes": [], "Head": []
+    "Background": [], "Base": [], "Nose": [], "Neck": [], "Face": [], "Accessory": [], "Mouth": [], "Ear": [], "Beard": [], "Eyes": [], "Head": []
   };
   let selectedOrder = [];
   let nfts = [];
@@ -175,12 +178,12 @@
   let openSectionLayers = null;
   let openSectionCreate = null;
 
-  const SECTIONS = ["Base", "Nose", "Neck", "Face", "Accessory", "Mouth", "Ear", "Beard", "Eyes", "Head"];
+  const SECTIONS = ["Background", "Base", "Nose", "Neck", "Face", "Accessory", "Mouth", "Ear", "Beard", "Eyes", "Head"];
 
   function loadFromStorage() {
     try {
       const storedSections = localStorage.getItem('nft_layers_sections_gender');
-      const storedNFTs = localStorage.getItem('nft_collection_v13');
+      const storedNFTs = localStorage.getItem('nft_collection_v14');
       if (storedSections) layersBySection = JSON.parse(storedSections);
       if (storedNFTs) nfts = JSON.parse(storedNFTs);
       for (let section of SECTIONS) {
@@ -194,7 +197,7 @@
 
   function saveToStorage() {
     localStorage.setItem('nft_layers_sections_gender', JSON.stringify(layersBySection));
-    localStorage.setItem('nft_collection_v13', JSON.stringify(nfts));
+    localStorage.setItem('nft_collection_v14', JSON.stringify(nfts));
   }
 
   window.switchTab = function(tab) {
@@ -290,17 +293,18 @@
       const layers = layersBySection[section] || [];
       if (layers.length > 0) hasAny = true;
       const isOpen = openSectionLayers === section;
-      const traitTypeLabel = section === "Base" ? "Base" : "Accessory";
-      const layerCount = layers.length;
+      const isBackground = section === "Background";
+      const traitTypeLabel = isBackground ? "UI Only (NOT in JSON)" : (section === "Base" ? "Base" : "Accessory");
+      const bgClass = isBackground ? "bg-badge" : "";
       
       html += `
-        <div class="section-card">
+        <div class="section-card ${bgClass}">
           <div onclick="window.toggleSectionLayers('${section}')" class="section-header p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <i data-lucide="folder" style="width:20px" class="text-indigo-400"></i>
-              <span class="font-bold text-indigo-300">${section}</span>
-              <span class="text-xs text-slate-500">(${layerCount} layers)</span>
-              <span class="text-xs bg-indigo-900/50 px-2 py-0.5 rounded-full">trait_type: ${traitTypeLabel}</span>
+              <i data-lucide="${isBackground ? 'image' : 'folder'}" style="width:20px" class="text-indigo-400"></i>
+              <span class="font-bold ${isBackground ? 'text-emerald-400' : 'text-indigo-300'}">${section}</span>
+              <span class="text-xs text-slate-500">(${layers.length} layers)</span>
+              <span class="text-xs ${isBackground ? 'bg-emerald-900/50 text-emerald-300' : 'bg-indigo-900/50'} px-2 py-0.5 rounded-full">${traitTypeLabel}</span>
             </div>
             <i data-lucide="chevron-down" style="width:18px" class="accordion-icon text-slate-400 ${isOpen ? 'rotate-180' : ''}"></i>
           </div>
@@ -344,17 +348,18 @@
       const isOpen = openSectionCreate === section;
       const selectedItem = selectedOrder.find(item => item.section === section);
       const selectedId = selectedItem ? selectedItem.layerId : null;
-      const traitTypeLabel = section === "Base" ? "Base" : "Accessory";
-      const layerCount = layers.length;
+      const isBackground = section === "Background";
+      const traitTypeLabel = isBackground ? "UI Only" : (section === "Base" ? "Base" : "Accessory");
+      const bgClass = isBackground ? "bg-badge" : "";
       
       html += `
-        <div class="section-card">
+        <div class="section-card ${bgClass}">
           <div onclick="window.toggleSectionCreate('${section}')" class="section-header p-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <i data-lucide="folder" style="width:20px" class="text-indigo-400"></i>
-              <span class="font-bold text-indigo-300">${section}</span>
-              <span class="text-xs text-slate-500">(${layerCount} layers)</span>
-              <span class="text-xs bg-indigo-900/50 px-2 py-0.5 rounded-full">${traitTypeLabel}</span>
+              <i data-lucide="${isBackground ? 'image' : 'folder'}" style="width:20px" class="text-indigo-400"></i>
+              <span class="font-bold ${isBackground ? 'text-emerald-400' : 'text-indigo-300'}">${section}</span>
+              <span class="text-xs text-slate-500">(${layers.length} layers)</span>
+              <span class="text-xs ${isBackground ? 'bg-emerald-900/50 text-emerald-300' : 'bg-indigo-900/50'} px-2 py-0.5 rounded-full">${traitTypeLabel}</span>
               ${selectedItem ? `<span class="text-xs text-green-400">✓ Selected (Order: ${selectedItem.order})</span>` : ''}
             </div>
             <i data-lucide="chevron-down" style="width:18px" class="accordion-icon text-slate-400 ${isOpen ? 'rotate-180' : ''}"></i>
@@ -426,13 +431,14 @@
     }
     
     const previewHtml = selectedOrder.map(item => {
-      const traitLabel = item.section === "Base" ? "Base" : "Acc";
+      const isBackground = item.section === "Background";
+      const traitLabel = isBackground ? "BG" : (item.section === "Base" ? "Base" : "Acc");
       const genderIcon = item.gender === 'male' ? '♂' : '♀';
       return `
         <span class="text-xs bg-indigo-900/50 px-2 py-1 rounded-full flex items-center gap-1">
           <span class="text-indigo-300 font-bold">${item.order}</span>
           <span class="${item.gender === 'male' ? 'text-blue-400' : 'text-pink-400'} text-[10px]">${genderIcon}</span>
-          <span class="text-yellow-300 text-[10px]">${traitLabel}</span>
+          <span class="${isBackground ? 'text-emerald-300' : 'text-yellow-300'} text-[10px]">${traitLabel}</span>
           <span>${escapeHtml(item.section)}:</span>
           <span class="text-white">${escapeHtml(item.value)}</span>
         </span>
@@ -480,11 +486,14 @@
     try {
       const imageData = await compositeFromSelected();
       
-      const attributes = selectedOrder.map(item => ({
-        trait_type: item.section === "Base" ? "Base" : "Accessory",
-        value: item.value
-      }));
-      attributes.push({ trait_type: "Attribute Count", value: selectedOrder.length.toString() });
+      // Build attributes - EXCLUDE Background section from JSON
+      const attributes = selectedOrder
+        .filter(item => item.section !== "Background")
+        .map(item => ({
+          trait_type: item.section === "Base" ? "Base" : "Accessory",
+          value: item.value
+        }));
+      attributes.push({ trait_type: "Attribute Count", value: attributes.length.toString() });
       
       const cidPlaceholder = "cid://QmPlaceholder_ReplaceWithActualCID";
       
@@ -507,7 +516,7 @@
       renderCreateSections();
       renderCollection();
       
-      window.showToast(`✅ "${nftName}" created!`);
+      window.showToast(`✅ "${nftName}" created! (Background not added to JSON)`);
       window.switchTab('collection');
     } catch(err) {
       window.showToast(`Error: ${err.message}`);
@@ -568,7 +577,7 @@
         </div>
         <div class="mb-3"><span class="text-slate-400 text-xs">Description</span><p class="text-sm mt-1 bg-[#1a1a2e] p-2 rounded-lg">${escapeHtml(nft.description)}</p></div>
         <div class="mb-3"><span class="text-slate-400 text-xs">CID Placeholder</span><p class="text-xs font-mono mt-1 bg-indigo-900/30 p-2 rounded-lg">${escapeHtml(nft.cidPlaceholder)}</p></div>
-        <div><span class="text-slate-400 text-xs">Attributes</span><div class="flex flex-wrap gap-2 mt-2">${attrsHtml}</div></div>
+        <div><span class="text-slate-400 text-xs">Attributes (Background excluded)</span><div class="flex flex-wrap gap-2 mt-2">${attrsHtml}</div></div>
         <div class="mt-5 flex gap-2">
           <button onclick="window.downloadJSON('${nft.id}'); this.closest('.modal-backdrop').remove();" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-2.5 rounded-xl text-sm font-medium">Download JSON</button>
           <button onclick="window.downloadImage('${nft.id}');" class="flex-1 bg-purple-600 hover:bg-purple-700 py-2.5 rounded-xl text-sm font-medium">Download Image</button>
