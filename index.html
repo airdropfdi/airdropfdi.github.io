@@ -462,7 +462,6 @@
     }
     #toast.hidden { display: none; }
 
-    /* Gender row - one line fix */
     .gender-row {
       display: flex;
       align-items: center;
@@ -563,7 +562,7 @@
             <input type="text" id="layer-value" placeholder="Value (e.g., Red Hair, Blue Skin)" class="nft-input" style="flex:1;min-width:180px">
             <select id="layer-section" class="nft-input" style="flex:1;min-width:160px">
               <option value="Background">Background (UI only - NOT in JSON)</option>
-              <option value="Base">Base (trait_type: Base)</option>
+              <option value="Base">Base</option>
               <option value="Nose">Nose</option>
               <option value="Neck">Neck</option>
               <option value="Face">Face</option>
@@ -575,7 +574,6 @@
               <option value="Head">Head</option>
             </select>
           </div>
-          <!-- Gender buttons in ONE LINE -->
           <div class="gender-row">
             <span class="font-raj" style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Gender (UI only):</span>
             <label class="gender-label">
@@ -608,7 +606,7 @@
       <div class="info-strip">
         <div style="display:grid;gap:4px">
           <span>📌 Click layers to select them · <span>First = Bottom layer</span> · Last = Top layer</span>
-          <span>🏷️ <span>Base</span> section = trait_type "Base" | Others = trait_type "Accessory"</span>
+          <span>🏷️ <span>Folder name = trait_type in JSON</span> (Base, Nose, Neck, Face, Accessory, Mouth, Ear, Beard, Eyes, Head)</span>
           <span>🌄 <span>Background</span> is UI only — will NOT appear in JSON attributes</span>
         </div>
       </div>
@@ -754,8 +752,8 @@
   }
   function getSectionBadgeLabel(section) {
     if(section==="Background") return "UI Only";
-    if(section==="Base") return "Base";
-    return "Accessory";
+    if(section==="Base") return "Trait: Base";
+    return "Trait: "+section;
   }
 
   function renderSections() {
@@ -883,13 +881,13 @@
     }
     div.innerHTML = selectedOrder.map(item=>{
       const isBg = item.section==="Background";
-      const traitLabel = isBg?"BG":(item.section==="Base"?"Base":"Acc");
+      const traitLabel = isBg?"BG":item.section;
       const genderIcon = item.gender==='male'?'♂':'♀';
       return `<span class="order-tag">
         <span style="color:var(--neon2);font-weight:800">${item.order}</span>
         <span style="color:${item.gender==='male'?'#60a5fa':'#f472b6'}">${genderIcon}</span>
         <span style="color:${isBg?'#34d399':'#fbbf24'}">${traitLabel}</span>
-        <span style="color:var(--muted)">${escapeHtml(item.section)}:</span>
+        <span style="color:var(--muted)">:</span>
         <span>${escapeHtml(item.value)}</span>
       </span>`;
     }).join('');
@@ -920,9 +918,15 @@
     btn.innerHTML='<div class="animate-spin" style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%"></div> Generating...';
     try {
       const imageData = await compositeFromSelected();
+      // IMPORTANT: trait_type = folder name (section), NOT "Accessory" for everything
       const attributes = selectedOrder
         .filter(item=>item.section!=="Background")
-        .map(item=>({ trait_type: item.section==="Base"?"Base":"Accessory", value: item.value }));
+        .map(item=>{ 
+          return { 
+            trait_type: item.section,  // folder name as trait_type (Base, Nose, Neck, Face, Accessory, Mouth, Ear, Beard, Eyes, Head)
+            value: item.value 
+          };
+        });
       attributes.push({ trait_type:"Attribute Count", value: attributes.length.toString() });
       const newNFT = {
         id: Date.now()+Math.random().toString(36).substr(2,6),
